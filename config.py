@@ -24,8 +24,8 @@ BOT_TOKEN = getenv("BOT_TOKEN", None)
 # ======================================================
 OWNER_ID = int(getenv("OWNER_ID", 7473021518))
 OWNER_USERNAME = getenv("OWNER_USERNAME", "ITZZ_ISTKHAR")
-BOT_USERNAME = getenv("BOT_USERNAME", "SonaliMusicBot")
-BOT_NAME = getenv("BOT_NAME", "Sonali Music")
+BOT_USERNAME = getenv("BOT_USERNAME", "MusicBot")
+BOT_NAME = getenv("BOT_NAME", " Music")
 ASSUSERNAME = getenv("ASSUSERNAME")
 
 # ======================================================
@@ -49,7 +49,7 @@ HEROKU_APP_NAME = getenv("HEROKU_APP_NAME")
 HEROKU_API_KEY = getenv("HEROKU_API_KEY")
 
 # ======================================================
-UPSTREAM_REPO = getenv("UPSTREAM_REPO", "https://github.com/Itzz-Sukku/Sukku-V2")
+UPSTREAM_REPO = getenv("UPSTREAM_REPO", "https://github.com/TEAM-ISTKHAR/ROOHI")
 UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "main")
 GIT_TOKEN = getenv("GIT_TOKEN", None)
 
