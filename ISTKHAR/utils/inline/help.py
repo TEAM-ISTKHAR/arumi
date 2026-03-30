@@ -1,0 +1,111 @@
+# ===========================================================
+# ©️ 2025-26 All Rights Reserved by ROOHI ISTKHAR (TEAM-ISTKHAR) 🚀
+# 
+# This source code is under MIT License 📜
+# ❌ Unauthorized forking, importing, or using this code
+#    without giving proper credit will result in legal action ⚠️
+# 
+# 📩 DM for permission : @ITZZ_ISTKHAR
+# ===========================================================
+
+from typing import Union
+
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+from ISTKHAR import app
+
+
+def help_pannel(_, START: Union[bool, int] = None):
+    first = [InlineKeyboardButton(text=_["CLOSE_BUTTON"], callback_data=f"close")]
+    second = [
+        InlineKeyboardButton(
+            text=_["BACK_BUTTON"],
+            callback_data=f"settingsback_helper",
+        ),
+    ]
+    mark = second if START else first
+    upl = InlineKeyboardMarkup(
+        [
+            #[
+            #    InlineKeyboardButton(text="ηєᴡ ʀᴛϻᴘ sᴛʀєᴧϻɪηɢ", callback_data="new_cb")],
+            
+            [
+                InlineKeyboardButton(
+                    text=_["H_B_25"],
+                    callback_data="help_callback hb1",
+                ),
+                InlineKeyboardButton(
+                    text=_["H_B_26"],
+                    callback_data="help_callback hb2",
+                ),
+                InlineKeyboardButton(
+                    text=_["H_B_28"],
+                    callback_data="help_callback hb3",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=_["H_B_27"],
+                    callback_data="help_callback hb4",
+                ),
+                InlineKeyboardButton(
+                    text=_["H_B_31"],
+                    callback_data="help_callback hb5",
+                ),
+                InlineKeyboardButton(
+                    text=_["H_B_29"],
+                    callback_data="help_callback hb6",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=_["H_B_33"],
+                    callback_data="help_callback hb7",
+                ),
+                InlineKeyboardButton(
+                    text=_["H_B_30"],
+                    callback_data="help_callback hb8",
+                ),
+                InlineKeyboardButton(
+                    text=_["H_B_32"],
+                    callback_data="help_callback hb9",
+                ),
+            ],
+            mark,
+        ]
+    )
+    return upl
+
+
+def help_back_markup(_):
+    upl = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    text=_["BACK_BUTTON"],
+                    callback_data=f"settings_back_helper",
+                ),
+            ]
+        ]
+    )
+    return upl
+
+
+def private_help_panel(_):
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text=_["S_B_4"],
+                url=f"https://t.me/{app.username}?start=help",
+            ),
+        ],
+    ]
+    return buttons
+
+# ===========================================================
+# ©️ 2025-26 All Rights Reserved by ROOHI ISTKHAR (TEAM-ISTKHAR) 😎
+# 
+# 🧑‍💻 Developer : t.me/ITZZ_ISTKHAR
+# 🔗 Source link : GitHub.com/TEAM-ISTKHAR/ROOHI-V2
+# 📢 Telegram channel : t.me/ROOHI_ISTKHAR
+# ===========================================================
