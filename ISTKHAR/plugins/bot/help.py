@@ -38,6 +38,33 @@ START_IMG = [
     "https://files.catbox.moe/gl5rg8.jpg",
 ]
 
+
+class BUTTONS(object):
+    ABUTTON = [
+    [
+        InlineKeyboardButton("˹ sυᴘᴘσʀᴛ ˼", url="https://t.me/IamIstkhar"),
+        InlineKeyboardButton("˹ υᴘᴅᴧᴛєs ˼", url="https://t.me/THUNDERDEVS")
+    ],
+    [
+        InlineKeyboardButton("˹ ❍ᴡηєʀ ˼", user_id=config.OWNER_ID),
+        InlineKeyboardButton("• ʙᴧᴄᴋ •", callback_data="settingsback_helper")
+    ]
+]
+
+    INFO_BUTTON = [
+    [
+        InlineKeyboardButton("˹ ʀєᴘσ ˼", callback_data="gib_source"),
+        InlineKeyboardButton("˹ ʏᴛ-ᴀᴘɪ ˼", callback_data="bot_info_data"),
+        InlineKeyboardButton("˹ ʟᴧηɢᴜᴧɢє ˼", callback_data="LG"),
+    ],
+        [
+
+        InlineKeyboardButton("˹ ᴘʀɪᴠᴧᴄʏ ˼", url="https://telegra.ph/Privacy-Policy--Purvi-Bots-by-ALPHA-BABY-08-06"),
+        InlineKeyboardButton("• ʙᴧᴄᴋ •", callback_data="settingsback_helper"),
+    ]
+    ]
+
+
 @app.on_message(filters.command(["help"]) & filters.private & ~BANNED_USERS)
 @app.on_callback_query(filters.regex("settings_back_helper") & ~BANNED_USERS)
 async def helper_private(
@@ -66,7 +93,6 @@ async def helper_private(
         keyboard = help_pannel(_)
         await update.reply_photo(
             photo=START_IMG_URL,
-            has_spoiler=True,
             caption=_["help_1"].format(SUPPORT_CHAT),
             reply_markup=keyboard,
         )
@@ -78,13 +104,6 @@ async def help_com_group(client, message: Message, _):
     keyboard = private_help_panel(_)
     await message.reply_text(_["help_2"], reply_markup=InlineKeyboardMarkup(keyboard))
 
-@app.on_callback_query(filters.regex("wel_cb") & ~BANNED_USERS)
-async def helper_cb(client, CallbackQuery):
-    await CallbackQuery.edit_message_text(Helper.HELP_WEL, reply_markup=InlineKeyboardMarkup(BUTTONS.INFO_NEW))
-
-@app.on_callback_query(filters.regex("night_cb") & ~BANNED_USERS)
-async def helper_cb(client, CallbackQuery):
-    await CallbackQuery.edit_message_text(Helper.HELP_NIGHT, reply_markup=InlineKeyboardMarkup(BUTTONS.INFO_NEW))
 
 @app.on_callback_query(filters.regex("abot_cb") & ~BANNED_USERS)
 async def helper_cb(client, CallbackQuery):
@@ -92,7 +111,7 @@ async def helper_cb(client, CallbackQuery):
     bot_mention = bot.mention
 
     await CallbackQuery.edit_message_text(
-        Helper.HELP_ABOUT.format(bot_mention),
+        helpers.HELP_ABOUT.format(bot_mention),
         reply_markup=InlineKeyboardMarkup(BUTTONS.INFO_BUTTON),
     )
 
@@ -102,19 +121,10 @@ async def helper_cb(client, CallbackQuery):
     bot_mention = bot.mention
 
     await CallbackQuery.edit_message_text(
-        Helper.HELP_SUPPORT.format(bot_mention),
+        helpers.HELP_SUPPORT.format(bot_mention),
         reply_markup=InlineKeyboardMarkup(BUTTONS.ABUTTON),
     )
 
-@app.on_callback_query(filters.regex("ibot_cb") & ~BANNED_USERS)
-async def helper_cb(client, CallbackQuery):
-    bot = await client.get_me()
-    bot_mention = bot.mention
-
-    await CallbackQuery.edit_message_text(
-        Helper.HELP_INFO.format(bot_mention),
-        reply_markup=InlineKeyboardMarkup(BUTTONS.INFO_BUTTON),
-    )
 
 @app.on_callback_query(filters.regex("back_cb") & ~BANNED_USERS)
 async def back_cb(client, CallbackQuery):
@@ -125,7 +135,7 @@ async def back_cb(client, CallbackQuery):
     await CallbackQuery.edit_message_media(
         media=InputMediaPhoto(
             media=photo,
-            caption=Helper.HELP_ABOUT.format(bot_mention)
+            caption=helpers.HELP_ABOUT.format(bot_mention)
         ),
         reply_markup=InlineKeyboardMarkup(BUTTONS.INFO_BUTTON)
     )
@@ -166,3 +176,4 @@ async def helper_cb(client, CallbackQuery, _):
         await CallbackQuery.edit_message_text(helpers.HELP_14, reply_markup=keyboard)
     elif cb == "hb15":
         await CallbackQuery.edit_message_text(helpers.HELP_15, reply_markup=keyboard)
+    
