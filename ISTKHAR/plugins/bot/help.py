@@ -120,7 +120,7 @@ async def helper_cb(client, CallbackQuery):
     bot_mention = bot.mention
 
     await CallbackQuery.edit_message_text(
-        helpers.HELP_SUPPORT.format(bot_mention),
+        HELP_SUPPORT = "Hello {0}, support ke liye admin se contact karo 👍"
         reply_markup=InlineKeyboardMarkup(BUTTONS.ABUTTON),
     )
 
