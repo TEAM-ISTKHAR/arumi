@@ -1,85 +1,97 @@
-import os, aiohttp, aiofiles, textwrap
+import os
+import re
+import aiohttp
+import aiofiles
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-os.makedirs("cache", exist_ok=True)
+from youtubesearchpython.__future__ import VideosSearch
+from config import YOUTUBE_IMG_URL
 
-def load_font(size):
+
+# 📁 cache folder ensure
+if not os.path.exists("cache"):
+    os.makedirs("cache")
+
+
+def clean_title(title):
+    title = re.sub(r"\W+", " ", title)
+    return " ".join(title.split()[:5]).title()
+
+
+async def gen_thumb(videoid: str):
+    file_path = f"cache/{videoid}.png"
+
+    if os.path.isfile(file_path):
+        return file_path
+
     try:
-        return ImageFont.truetype("ISTKHAR/assets/assets/font3.ttf", size)
-    except:
-        return ImageFont.load_default()
+        url = f"https://www.youtube.com/watch?v={videoid}"
+        results = VideosSearch(url, limit=1)
+        data = (await results.next())["result"][0]
 
-title_font = load_font(45)
-small_font = load_font(30)
+        title = clean_title(data.get("title", "Unknown Title"))
+        duration = data.get("duration", "0:00")
+        channel = data.get("channel", {}).get("name", "Unknown Channel")
+        thumbnail = data["thumbnails"][0]["url"].split("?")[0]
 
-def draw_center_text(draw, text, y, font, width):
-    lines = textwrap.wrap(text, width=30)
-    for line in lines[:2]:
-        bbox = draw.textbbox((0,0), line, font=font)
-        text_width = bbox[2] - bbox[0]
-        x = (width - text_width) // 2
-        draw.text((x, y), line, font=font, fill="white")
-        y += 50
+        # 📥 Download thumbnail
+        raw_path = f"cache/{videoid}_raw.png"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(thumbnail) as resp:
+                if resp.status == 200:
+                    async with aiofiles.open(raw_path, "wb") as f:
+                        await f.write(await resp.read())
 
-async def create_pro_thumb(videoid, title="Unknown Title", duration="0:00", channel="Channel"):
-    path = f"cache/{videoid}_yt.png"
+        base = Image.open(raw_path).convert("RGB")
 
-    if os.path.exists(path):
-        return path
+        # 🔥 Background (blur)
+        bg = base.resize((1280, 720)).filter(ImageFilter.GaussianBlur(25))
 
-    thumb_url = f"https://img.youtube.com/vi/{videoid}/hqdefault.jpg"
+        # 🌑 Dark overlay
+        overlay = Image.new('RGBA', bg.size, (0, 0, 0, 120))
+        bg = Image.alpha_composite(bg.convert('RGBA'), overlay)
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(thumb_url) as resp:
-            if resp.status != 200:
-                return None
-            async with aiofiles.open("cache/temp.jpg", "wb") as f:
-                await f.write(await resp.read())
+        # 🎵 Center cover (rounded)
+        cover = base.resize((350, 350))
+        mask = Image.new("L", cover.size, 0)
+        draw_mask = ImageDraw.Draw(mask)
+        draw_mask.rounded_rectangle((0, 0, 350, 350), radius=40, fill=255)
 
-    base = Image.open("cache/temp.jpg").resize((1280, 720)).convert("RGBA")
+        bg.paste(cover, (120, 185), mask)
 
-    # 🔥 Blur background
-    bg = base.filter(ImageFilter.GaussianBlur(25))
+        draw = ImageDraw.Draw(bg)
 
-    # 🔥 Dark overlay
-    overlay = Image.new("RGBA", bg.size, (0, 0, 0, 150))
-    bg = Image.alpha_composite(bg, overlay)
+        # 🔤 Fonts
+        try:
+            title_font = ImageFont.truetype("ISTKHAR/ROOHI/f.ttf", 45)
+            small_font = ImageFont.truetype("ISTKHAR/ROOHI/f.ttf", 28)
+        except:
+            title_font = ImageFont.load_default()
+            small_font = ImageFont.load_default()
 
-    draw = ImageDraw.Draw(bg)
+        # 📝 Text UI
+        draw.text((520, 220), title, font=title_font, fill=(255, 255, 255))
+        draw.text((520, 290), f"{channel}", font=small_font, fill=(200, 200, 200))
+        draw.text((520, 330), f"Duration: {duration}", font=small_font, fill=(180, 180, 180))
 
-    # 🔥 Center thumbnail
-    center = base.resize((700, 400))
-    x = (1280 - 700) // 2
-    y = 100
-    bg.paste(center, (x, y))
+        # 🎚 Progress bar
+        bar_x = 520
+        bar_y = 400
+        bar_width = 500
 
-    # 🔥 Title center (bottom)
-    draw_center_text(draw, title, 520, title_font, 1280)
+        draw.rectangle((bar_x, bar_y, bar_x + bar_width, bar_y + 6), fill=(120, 120, 120))
+        draw.rectangle((bar_x, bar_y, bar_x + int(bar_width * 0.35), bar_y + 6), fill=(255, 255, 255))
 
-    # 🔥 Channel / playlist name
-    bbox = draw.textbbox((0,0), channel, font=small_font)
-    text_width = bbox[2] - bbox[0]
-    draw.text(((1280 - text_width)//2, 600), channel, font=small_font, fill=(200,200,200))
+        # 🎮 Player buttons
+        draw.text((720, 450), "⏮   ⏸   ⏭", font=title_font, fill=(255, 255, 255))
 
-    # 🔥 Progress bar (centered)
-    bar_x1 = 240
-    bar_x2 = 1040
-    draw.rectangle((bar_x1, 650, bar_x2, 660), fill=(255,255,255,80))
-    draw.rectangle((bar_x1, 650, bar_x1+500, 660), fill=(255,0,0))
+        # 💾 Save
+        bg.convert("RGB").save(file_path)
 
-    # 🔥 Duration
-    draw.text((bar_x1, 670), "00:00", font=small_font, fill="white")
-    draw.text((bar_x2-80, 670), duration, font=small_font, fill="white")
+        # 🧹 cleanup
+        os.remove(raw_path)
 
-    # 🔥 Watermark
-    draw.text((20, 20), "@SukoonxRobot", font=small_font, fill="yellow")
+        return file_path
 
-    bg.save(path)
-    os.remove("cache/temp.jpg")
-
-    return path
-
-
-# ✅ IMPORTANT (error fix ke liye)
-async def get_thumb(videoid):
-    return await create_pro_thumb(videoid)
+    except Exception as e:
+        print("Thumbnail Error:", e
