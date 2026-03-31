@@ -5,7 +5,6 @@ import aiofiles
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from youtubesearchpython.__future__ import VideosSearch
-from config import YOUTUBE_IMG_URL
 
 # 📁 cache folder ensure
 if not os.path.exists("cache"):
@@ -24,8 +23,8 @@ async def gen_thumb(videoid: str):
         return file_path
 
     try:
-        url = f"https://www.youtube.com/watch?v={videoid}"
-        results = VideosSearch(url, limit=1)
+        # ⚠️ FIX: URL ki jagah videoid use karo (important)
+        results = VideosSearch(videoid, limit=1)
         data = (await results.next())["result"][0]
 
         title = clean_title(data.get("title", "Unknown Title"))
@@ -35,11 +34,14 @@ async def gen_thumb(videoid: str):
 
         # 📥 Download thumbnail
         raw_path = f"cache/{videoid}_raw.png"
+
         async with aiohttp.ClientSession() as session:
             async with session.get(thumbnail) as resp:
                 if resp.status == 200:
                     async with aiofiles.open(raw_path, "wb") as f:
                         await f.write(await resp.read())
+                else:
+                    return None
 
         base = Image.open(raw_path).convert("RGB")
 
@@ -70,7 +72,7 @@ async def gen_thumb(videoid: str):
 
         # 📝 Text UI
         draw.text((520, 220), title, font=title_font, fill=(255, 255, 255))
-        draw.text((520, 290), f"{channel}", font=small_font, fill=(200, 200, 200))
+        draw.text((520, 290), channel, font=small_font, fill=(200, 200, 200))
         draw.text((520, 330), f"Duration: {duration}", font=small_font, fill=(180, 180, 180))
 
         # 🎚 Progress bar
