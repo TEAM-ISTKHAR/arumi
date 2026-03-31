@@ -48,8 +48,8 @@ START_IMG = [
 class BUTTONS(object):
     ABUTTON = [
         [
-            InlineKeyboardButton("˹ sυᴘᴘσʀᴛ ˼", url="https://t.me/IamIstkhar"),
-            InlineKeyboardButton("˹ υᴘᴅᴧᴛєs ˼", url="https://t.me/THUNDERDEVS")
+            InlineKeyboardButton("˹ sυᴘᴘσʀᴛ ˼", url="https://t.me/+odmRO_JAHs85YWNh"),
+            InlineKeyboardButton("˹ υᴘᴅᴧᴛєs ˼", url="https://t.me/+odmRO_JAHs85YWNh")
         ],
         [
             InlineKeyboardButton("˹ ❍ᴡηєʀ ˼", user_id=config.OWNER_ID),
@@ -64,8 +64,7 @@ class BUTTONS(object):
             InlineKeyboardButton("˹ ʟᴧηɢᴜᴧɢє ˼", callback_data="LG"),
         ],
         [
-            InlineKeyboardButton("˹ ᴘʀɪᴠᴧᴄʏ ˼", url="https://telegra.ph/Privacy-Policy--Purvi-Bots-by-ALPHA-BABY-08-06"),
-            InlineKeyboardButton("• ʙᴧᴄᴋ •", callback_data="settingsback_helper"),
+                    InlineKeyboardButton("• ʙᴧᴄᴋ •", callback_data="settingsback_helper"),
         ]
     ]
 
