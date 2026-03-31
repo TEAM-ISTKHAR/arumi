@@ -38,7 +38,7 @@ from ISTKHAR.utils.decorators.language import languageCB
 from ISTKHAR.utils.formatters import seconds_to_min
 from ISTKHAR.utils.inline import close_markup, stream_markup, stream_markup_timer
 from ISTKHAR.utils.stream.autoclear import auto_clean
-from ISTKHAR.utils.thumbnails import get_thumb
+from ISTKHAR.utils.thumbnails import gen_thumb
 from config import (
     BANNED_USERS,
     SOUNCLOUD_IMG_URL,
