@@ -1,8 +1,10 @@
 import os, aiohttp, aiofiles
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+# ✅ cache folder auto create
 os.makedirs("cache", exist_ok=True)
 
+# ✅ safe font loader
 def load_font(size):
     try:
         return ImageFont.truetype("ISTKHAR/assets/assets/font3.ttf", size)
@@ -12,48 +14,67 @@ def load_font(size):
 title_font = load_font(50)
 small_font = load_font(28)
 
+# 🔥 MAIN FUNCTION (PRO)
 async def create_pro_thumb(videoid, title="Unknown Title", duration="0:00"):
-    thumb_url = f"https://img.youtube.com/vi/{videoid}/hqdefault.jpg"
     path = f"cache/{videoid}_pro.png"
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(thumb_url) as resp:
-            if resp.status != 200:
-                return None
-            async with aiofiles.open("cache/temp.jpg", "wb") as f:
-                await f.write(await resp.read())
+    # ✅ cache reuse
+    if os.path.exists(path):
+        return path
 
-    base = Image.open("cache/temp.jpg").resize((1280, 720)).convert("RGBA")
+    thumb_url = f"https://img.youtube.com/vi/{videoid}/hqdefault.jpg"
 
-    # 🔥 Blur background
-    bg = base.filter(ImageFilter.GaussianBlur(25))
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(thumb_url) as resp:
+                if resp.status != 200:
+                    return None
+                async with aiofiles.open("cache/temp.jpg", "wb") as f:
+                    await f.write(await resp.read())
+    except:
+        return None
 
-    draw = ImageDraw.Draw(bg)
+    try:
+        base = Image.open("cache/temp.jpg").resize((1280, 720)).convert("RGBA")
 
-    # 🔥 Dark overlay
-    overlay = Image.new("RGBA", bg.size, (0, 0, 0, 120))
-    bg = Image.alpha_composite(bg, overlay)
+        # 🔥 background blur
+        bg = base.filter(ImageFilter.GaussianBlur(30))
 
-    # 🔥 Center thumbnail (sharp)
-    center = base.resize((500, 300))
-    bg.paste(center, (390, 150))
+        # 🔥 dark overlay
+        overlay = Image.new("RGBA", bg.size, (0, 0, 0, 140))
+        bg = Image.alpha_composite(bg, overlay)
 
-    # 🔥 Title (2 lines)
-    title = title[:50]
-    draw.text((100, 500), title, font=title_font, fill="white")
+        draw = ImageDraw.Draw(bg)
 
-    # 🔥 Progress bar (neon)
-    draw.rectangle((100, 600, 1100, 610), fill=(255,255,255,100))
-    draw.rectangle((100, 600, 700, 610), fill=(255,0,0))
+        # 🔥 center thumbnail (rounded style)
+        center = base.resize((520, 300))
+        bg.paste(center, (380, 160))
 
-    # 🔥 Time text
-    draw.text((100, 630), "00:00", font=small_font, fill="white")
-    draw.text((1050, 630), duration, font=small_font, fill="white")
+        # 🔥 title (auto wrap)
+        title = title[:60]
+        draw.text((80, 500), title, font=title_font, fill="white")
 
-    # 🔥 Watermark
-    draw.text((900, 20), "@SukoonxRobot", font=small_font, fill="yellow")
+        # 🔥 progress bar
+        draw.rectangle((80, 600, 1200, 610), fill=(255,255,255,80))
+        draw.rectangle((80, 600, 750, 610), fill=(255,0,0))
 
-    bg.save(path)
-    os.remove("cache/temp.jpg")
+        # 🔥 time
+        draw.text((80, 630), "00:00", font=small_font, fill="white")
+        draw.text((1100, 630), duration, font=small_font, fill="white")
 
-    return path
+        # 🔥 watermark
+        draw.text((900, 20), "@SukoonxRobot", font=small_font, fill="yellow")
+
+        bg.save(path)
+
+        os.remove("cache/temp.jpg")
+        return path
+
+    except Exception as e:
+        print("Thumbnail Error:", e)
+        return None
+
+
+# ✅ IMPORTANT FIX (tere error ka solution)
+async def get_thumb(videoid):
+    return await create_pro_thumb(videoid)
