@@ -1,8 +1,10 @@
 import os, aiohttp, aiofiles, textwrap
 from PIL import Image, ImageDraw, ImageFont
 
+# ✅ cache folder
 os.makedirs("cache", exist_ok=True)
 
+# ✅ Unicode safe font loader
 def load_font(size):
     try:
         return ImageFont.truetype("ISTKHAR/assets/assets/font3.ttf", size)
@@ -12,7 +14,23 @@ def load_font(size):
 title_font = load_font(45)
 small_font = load_font(30)
 
-async def create_thumb(videoid, user_dp=None, title="Unknown", channel="Channel", duration="0:00"):
+# ✅ Unicode safe text
+def safe_text(text):
+    try:
+        text.encode("utf-8")
+        return text
+    except:
+        return text.encode("ascii", "ignore").decode()
+
+# ✅ Safe draw (no crash)
+def safe_draw(draw, pos, text, font, fill):
+    try:
+        draw.text(pos, text, font=font, fill=fill)
+    except:
+        draw.text(pos, safe_text(text), font=font, fill=fill)
+
+# 🔥 MAIN FUNCTION
+async def create_thumb(videoid, user_dp=None, title="Unknown Title", channel="Unknown Channel", duration="0:00"):
     path = f"cache/{videoid}_final.png"
 
     if os.path.exists(path):
@@ -20,67 +38,86 @@ async def create_thumb(videoid, user_dp=None, title="Unknown", channel="Channel"
 
     thumb_url = f"https://img.youtube.com/vi/{videoid}/hqdefault.jpg"
 
-    # ✅ download video thumbnail
-    async with aiohttp.ClientSession() as session:
-        async with session.get(thumb_url) as resp:
-            if resp.status != 200:
-                return None
-            async with aiofiles.open("cache/thumb.jpg", "wb") as f:
-                await f.write(await resp.read())
-
-    base = Image.open("cache/thumb.jpg").resize((1280, 720)).convert("RGBA")
-
-    # ✅ CLEAN BACKGROUND (no blur)
-    bg = Image.new("RGBA", (1280, 720), (20, 20, 20))  # dark clean bg
-
-    draw = ImageDraw.Draw(bg)
-
-    # 🔥 main thumbnail (left side)
-    main_thumb = base.resize((700, 400))
-    bg.paste(main_thumb, (50, 150))
-
-    # 🔥 USER DP (right side circle)
-    if user_dp:
+    # ✅ download thumbnail
+    try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(user_dp) as resp:
-                if resp.status == 200:
-                    async with aiofiles.open("cache/dp.jpg", "wb") as f:
-                        await f.write(await resp.read())
+            async with session.get(thumb_url) as resp:
+                if resp.status != 200:
+                    return None
+                async with aiofiles.open("cache/thumb.jpg", "wb") as f:
+                    await f.write(await resp.read())
+    except:
+        return None
 
-        dp = Image.open("cache/dp.jpg").resize((200, 200)).convert("RGBA")
+    try:
+        base = Image.open("cache/thumb.jpg").resize((1280, 720)).convert("RGBA")
 
-        # circle mask
-        mask = Image.new("L", (200, 200), 0)
-        draw_mask = ImageDraw.Draw(mask)
-        draw_mask.ellipse((0, 0, 200, 200), fill=255)
+        # ✅ clean dark background
+        bg = Image.new("RGBA", (1280, 720), (25, 25, 25))
+        draw = ImageDraw.Draw(bg)
 
-        bg.paste(dp, (1000, 200), mask)
+        # 🔥 main video thumbnail (left)
+        main_thumb = base.resize((700, 400))
+        bg.paste(main_thumb, (50, 150))
 
-    # 🔥 TITLE (right side)
-    wrapped = textwrap.wrap(title, width=20)
-    y_text = 420
-    for line in wrapped[:2]:
-        draw.text((900, y_text), line, font=title_font, fill="white")
-        y_text += 50
+        # 🔥 USER DP (right circle)
+        if user_dp:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(user_dp) as resp:
+                        if resp.status == 200:
+                            async with aiofiles.open("cache/dp.jpg", "wb") as f:
+                                await f.write(await resp.read())
 
-    # 🔥 CHANNEL
-    draw.text((900, 520), channel, font=small_font, fill=(200,200,200))
+                dp = Image.open("cache/dp.jpg").resize((200, 200)).convert("RGBA")
 
-    # 🔥 DURATION
-    draw.text((900, 560), f"⏱ {duration}", font=small_font, fill="white")
+                mask = Image.new("L", (200, 200), 0)
+                mdraw = ImageDraw.Draw(mask)
+                mdraw.ellipse((0, 0, 200, 200), fill=255)
 
-    # 🔥 WATERMARK
-    draw.text((20, 20), "@SukoonxRobot", font=small_font, fill="yellow")
+                bg.paste(dp, (1000, 180), mask)
 
-    bg.save(path)
+            except:
+                pass
 
-    os.remove("cache/thumb.jpg")
-    if os.path.exists("cache/dp.jpg"):
-        os.remove("cache/dp.jpg")
+        # 🔥 TEXT SAFE
+        title = safe_text(title)
+        channel = safe_text(channel)
 
-    return path
+        # 🔥 TITLE (right side wrap)
+        wrapped = textwrap.wrap(title, width=20)
+        y = 420
+        for line in wrapped[:2]:
+            safe_draw(draw, (900, y), line, title_font, "white")
+            y += 50
+
+        # 🔥 CHANNEL
+        safe_draw(draw, (900, 520), channel, small_font, (200,200,200))
+
+        # 🔥 DURATION
+        safe_draw(draw, (900, 560), f"⏱ {duration}", small_font, "white")
+
+        # 🔥 PROGRESS BAR
+        draw.rectangle((900, 600, 1200, 610), fill=(255,255,255,80))
+        draw.rectangle((900, 600, 1050, 610), fill=(255,0,0))
+
+        # 🔥 WATERMARK
+        safe_draw(draw, (20, 20), "@SukoonxRobot", small_font, "yellow")
+
+        bg.save(path)
+
+        # cleanup
+        os.remove("cache/thumb.jpg")
+        if os.path.exists("cache/dp.jpg"):
+            os.remove("cache/dp.jpg")
+
+        return path
+
+    except Exception as e:
+        print("Thumbnail Error:", e)
+        return None
 
 
-# ✅ FIX for your bot
+# ✅ IMPORTANT (error fix)
 async def get_thumb(videoid):
     return await create_thumb(videoid)
