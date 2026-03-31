@@ -7,7 +7,6 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from youtubesearchpython.__future__ import VideosSearch
 from config import YOUTUBE_IMG_URL
 
-
 # 📁 cache folder ensure
 if not os.path.exists("cache"):
     os.makedirs("cache")
@@ -89,9 +88,11 @@ async def gen_thumb(videoid: str):
         bg.convert("RGB").save(file_path)
 
         # 🧹 cleanup
-        os.remove(raw_path)
+        if os.path.exists(raw_path):
+            os.remove(raw_path)
 
         return file_path
 
     except Exception as e:
-        print("Thumbnail Error:", e
+        print("Thumbnail Error:", e)
+        return None
