@@ -1,123 +1,77 @@
-import os, aiohttp, aiofiles, textwrap
-from PIL import Image, ImageDraw, ImageFont
+import os
+import re
+import aiohttp
+import aiofiles
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from youtubesearchpython.__future__ import VideosSearch
+from config import YOUTUBE_IMG_URL
 
-# ✅ cache folder
-os.makedirs("cache", exist_ok=True)
+CACHE_DIR = "cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
 
-# ✅ Unicode safe font loader
-def load_font(size):
+W, H = 1280, 720
+
+# ✅ Safe font loader (Unicode error fix)
+def load_font(path, size):
     try:
-        return ImageFont.truetype("ISTKHAR/assets/assets/font3.ttf", size)
+        return ImageFont.truetype(path, size)
     except:
         return ImageFont.load_default()
 
-title_font = load_font(45)
-small_font = load_font(30)
+title_font = load_font("ISTKHAR/assets/assets/font3.ttf", 60)
+small_font = load_font("ISTKHAR/assets/assets/font.ttf", 30)
 
-# ✅ Unicode safe text
-def safe_text(text):
-    try:
-        text.encode("utf-8")
-        return text
-    except:
-        return text.encode("ascii", "ignore").decode()
+# ✅ Text trim (overflow fix)
+def trim(text, max_len=45):
+    return text[:max_len] + "..." if len(text) > max_len else text
 
-# ✅ Safe draw (no crash)
-def safe_draw(draw, pos, text, font, fill):
-    try:
-        draw.text(pos, text, font=font, fill=fill)
-    except:
-        draw.text(pos, safe_text(text), font=font, fill=fill)
 
-# 🔥 MAIN FUNCTION
-async def create_thumb(videoid, user_dp=None, title="Unknown Title", channel="Unknown Channel", duration="0:00"):
-    path = f"cache/{videoid}_final.png"
+# =========================================================
+# MAIN FUNCTION (IMPORTANT — import error fix)
+# =========================================================
+async def get_thumb(videoid: str, player_username: str = "Unknown"):
+    path = f"{CACHE_DIR}/{videoid}_final.png"
 
     if os.path.exists(path):
         return path
 
-    thumb_url = f"https://img.youtube.com/vi/{videoid}/hqdefault.jpg"
-
-    # ✅ download thumbnail
+    # 🔎 Fetch YouTube data
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(thumb_url) as resp:
-                if resp.status != 200:
-                    return None
-                async with aiofiles.open("cache/thumb.jpg", "wb") as f:
-                    await f.write(await resp.read())
-    except:
-        return None
+        results = await VideosSearch(videoid, limit=1).next()
+        data = results["result"][0]
 
-    try:
-        base = Image.open("cache/thumb.jpg").resize((1280, 720)).convert("RGBA")
+        title = re.sub(r"\W+", " ", data.get("title", "Unknown"))
+        duration = data.get("duration", "0:00")
+        channel = data.get("channel", {}).get("name", "YouTube")
+        thumb_url = data.get("thumbnails", [{}])[0].get("url", YOUTUBE_IMG_URL)
 
-        # ✅ clean dark background
-        bg = Image.new("RGBA", (1280, 720), (25, 25, 25))
-        draw = ImageDraw.Draw(bg)
+    except Exception:
+        return YOUTUBE_IMG_URL
 
-        # 🔥 main video thumbnail (left)
-        main_thumb = base.resize((700, 400))
-        bg.paste(main_thumb, (50, 150))
+    # 📥 Download thumbnail
+    raw = f"{CACHE_DIR}/{videoid}_raw.jpg"
 
-        # 🔥 USER DP (right circle)
-        if user_dp:
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(user_dp) as resp:
-                        if resp.status == 200:
-                            async with aiofiles.open("cache/dp.jpg", "wb") as f:
-                                await f.write(await resp.read())
+    async with aiohttp.ClientSession() as session:
+        async with session.get(thumb_url) as resp:
+            if resp.status != 200:
+                return YOUTUBE_IMG_URL
+            async with aiofiles.open(raw, "wb") as f:
+                await f.write(await resp.read())
 
-                dp = Image.open("cache/dp.jpg").resize((200, 200)).convert("RGBA")
+    # 🖼️ Open image
+    base = Image.open(raw).resize((W, H)).convert("RGB")
 
-                mask = Image.new("L", (200, 200), 0)
-                mdraw = ImageDraw.Draw(mask)
-                mdraw.ellipse((0, 0, 200, 200), fill=255)
+    # 🔥 BACKGROUND = SAME IMAGE BLUR (FIXED)
+    bg = base.filter(ImageFilter.GaussianBlur(35)).convert("RGBA")
 
-                bg.paste(dp, (1000, 180), mask)
+    # 🔥 DARK OVERLAY (readability)
+    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 140))
+    bg = Image.alpha_composite(bg, overlay)
 
-            except:
-                pass
+    draw = ImageDraw.Draw(bg)
 
-        # 🔥 TEXT SAFE
-        title = safe_text(title)
-        channel = safe_text(channel)
+    # 🔥 CENTER CARD (clean youtube style)
+    card = base.resize((600, 340))
+    bg.paste(card, (340, 120))
 
-        # 🔥 TITLE (right side wrap)
-        wrapped = textwrap.wrap(title, width=20)
-        y = 420
-        for line in wrapped[:2]:
-            safe_draw(draw, (900, y), line, title_font, "white")
-            y += 50
-
-        # 🔥 CHANNEL
-        safe_draw(draw, (900, 520), channel, small_font, (200,200,200))
-
-        # 🔥 DURATION
-        safe_draw(draw, (900, 560), f"⏱ {duration}", small_font, "white")
-
-        # 🔥 PROGRESS BAR
-        draw.rectangle((900, 600, 1200, 610), fill=(255,255,255,80))
-        draw.rectangle((900, 600, 1050, 610), fill=(255,0,0))
-
-        # 🔥 WATERMARK
-        safe_draw(draw, (20, 20), "@SukoonxRobot", small_font, "yellow")
-
-        bg.save(path)
-
-        # cleanup
-        os.remove("cache/thumb.jpg")
-        if os.path.exists("cache/dp.jpg"):
-            os.remove("cache/dp.jpg")
-
-        return path
-
-    except Exception as e:
-        print("Thumbnail Error:", e)
-        return None
-
-
-# ✅ IMPORTANT (error fix)
-async def get_thumb(videoid):
-    return await create_thumb(videoid)
+    # 🔥
