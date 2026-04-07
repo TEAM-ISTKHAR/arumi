@@ -1,5 +1,5 @@
 # ===========================================================
-# 🚀 ROOHI THUMBNAIL ENGINE 🚀
+# 🚀 ROOHI x ISTKHAR THUMBNAIL ENGINE 🚀
 # ===========================================================
 
 import os
@@ -12,9 +12,17 @@ from py_yt import VideosSearch
 from config import YOUTUBE_IMG_URL
 
 
-def changeImageSize(maxWidth, maxHeight, image):
-    return image.resize((maxWidth, maxHeight))
+# ===========================================================
+# CLEAN TEXT (REMOVE EMOJI / BUG SYMBOLS)
+# ===========================================================
 
+def clean_text(text):
+    return re.sub(r'[^\x00-\x7F]+', '', str(text))
+
+
+# ===========================================================
+# MAIN FUNCTION
+# ===========================================================
 
 async def gen_thumb(videoid, user_name="Unknown"):
     os.makedirs("cache", exist_ok=True)
@@ -24,13 +32,12 @@ async def gen_thumb(videoid, user_name="Unknown"):
         results = VideosSearch(url, limit=1)
 
         for result in (await results.next())["result"]:
-            title = result.get("title", "Unknown Title")
-            title = re.sub("\W+", " ", title).title()
+            title = clean_text(result.get("title", "Unknown Title"))
             duration = result.get("duration", "Unknown")
             thumbnail = result["thumbnails"][0]["url"].split("?")[0]
             views = result.get("viewCount", {}).get("short", "Unknown")
 
-        # download thumbnail
+        # ================= DOWNLOAD =================
         async with aiohttp.ClientSession() as session:
             async with session.get(thumbnail) as resp:
                 if resp.status == 200:
@@ -39,41 +46,41 @@ async def gen_thumb(videoid, user_name="Unknown"):
 
         youtube = Image.open(f"cache/thumb{videoid}.png").convert("RGBA")
 
-        # background blur
+        # ================= BACKGROUND =================
         bg = youtube.resize((1280, 720))
         bg = bg.filter(ImageFilter.GaussianBlur(20))
         bg = ImageEnhance.Brightness(bg).enhance(0.4)
 
-        # main card (same style)
-        thumb_w, thumb_h = 840, 460
+        # ================= MAIN THUMB (COMPACT SIZE) =================
+        thumb_w, thumb_h = 780, 420
         thumb = youtube.resize((thumb_w, thumb_h))
 
         mask = Image.new("L", (thumb_w, thumb_h), 0)
         ImageDraw.Draw(mask).rounded_rectangle(
-            [(0, 0), (thumb_w, thumb_h)], radius=20, fill=255
+            [(0, 0), (thumb_w, thumb_h)], radius=18, fill=255
         )
         thumb.putalpha(mask)
 
         x = (1280 - thumb_w) // 2
-        y = 130
+        y = 110
 
-        # glow
+        # ================= GLOW =================
         glow = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
         ImageDraw.Draw(glow).rounded_rectangle(
-            [(x - 20, y - 20), (x + thumb_w + 20, y + thumb_h + 20)],
-            radius=30,
+            [(x - 18, y - 18), (x + thumb_w + 18, y + thumb_h + 18)],
+            radius=25,
             fill="#FFD700",
         )
-        glow = glow.filter(ImageFilter.GaussianBlur(30))
+        glow = glow.filter(ImageFilter.GaussianBlur(25))
         bg.paste(glow, (0, 0), glow)
 
-        # border
+        # ================= BORDER =================
         border = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
         ImageDraw.Draw(border).rounded_rectangle(
             [(x - 5, y - 5), (x + thumb_w + 5, y + thumb_h + 5)],
-            radius=25,
+            radius=20,
             outline="#FFD700",
-            width=5,
+            width=4,
         )
         bg.paste(border, (0, 0), border)
 
@@ -81,17 +88,17 @@ async def gen_thumb(videoid, user_name="Unknown"):
 
         draw = ImageDraw.Draw(bg)
 
-        # fonts
+        # ================= FONTS =================
         try:
-            font_title = ImageFont.truetype("ISTKHAR/assets/font.ttf", 45)
-            font_small = ImageFont.truetype("ISTKHAR/assets/font2.ttf", 30)
+            font_title = ImageFont.truetype("ISTKHAR/assets/font.ttf", 40)
+            font_small = ImageFont.truetype("ISTKHAR/assets/font2.ttf", 26)
         except:
-            font_title = ImageFont.truetype("arial.ttf", 45)
-            font_small = ImageFont.truetype("arial.ttf", 30)
+            font_title = ImageFont.truetype("arial.ttf", 40)
+            font_small = ImageFont.truetype("arial.ttf", 26)
 
-        # 🔥 TITLE FIX (same look but controlled)
-        if len(title) > 45:
-            title = title[:45] + "..."
+        # ================= TITLE FIX =================
+        if len(title) > 35:
+            title = title[:35] + "..."
 
         def center(text, y_pos, font, color):
             w = draw.textlength(text, font=font)
@@ -104,17 +111,18 @@ async def gen_thumb(videoid, user_name="Unknown"):
                 stroke_fill="black",
             )
 
-        # title
-        center(title, y + thumb_h + 40, font_title, "white")
+        # ================= TEXT =================
+        center(title, y + thumb_h + 25, font_title, "white")
 
-        # ✅ PLAYER FIX (MAIN CHANGE)
-        stats = f"YouTube : {views} | Time : {duration} | Player : {user_name}"
-        center(stats, y + thumb_h + 90, font_small, "#FFD700")
+        safe_name = clean_text(user_name)
+        stats = f"YouTube : {views} | Time : {duration} | Player : {safe_name}"
+        center(stats, y + thumb_h + 65, font_small, "#FFD700")
 
-        # dev text (same style)
+        # ================= WATERMARK =================
         draw.text((950, 30), "Dev :- @ITZZ_ISTKHAR", fill="yellow", font=font_small)
         draw.text((30, 680), "@IAMISTKHAR", fill="white", font=font_small)
 
+        # ================= SAVE =================
         file = f"cache/{videoid}.png"
         bg.save(file)
 
@@ -131,7 +139,7 @@ async def gen_thumb(videoid, user_name="Unknown"):
 
 
 # ===========================================================
-# BACKUP
+# BACKUP FUNCTIONS
 # ===========================================================
 
 async def get_thumb(videoid, user_name="Unknown"):
