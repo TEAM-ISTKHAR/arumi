@@ -1,4 +1,3 @@
-
 # ===========================================================
 #  ██████╗  ██████╗  ██████╗ ██╗  ██╗██╗
 #  ██╔══██╗██╔═══██╗██╔═══██╗██║  ██║██║
@@ -8,7 +7,6 @@
 #  ╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝
 #
 #        🚀 ROOHI MUSIC CONFIG 🚀
-#        👑 Owner : @ITZZ_ISTKHAR
 # ===========================================================
 
 import re
@@ -37,7 +35,6 @@ ASSUSERNAME = getenv("ASSUSERNAME")
 # ======================================================
 MONGO_DB_URI = getenv("MONGO_DB_URI", None)
 
-# ❗ FIXED LOGGER (avoid crash)
 try:
     LOGGER_ID = int(getenv("LOGGER_ID", "0"))
 except:
@@ -48,12 +45,20 @@ except:
 # ======================================================
 DURATION_LIMIT_MIN = int(getenv("DURATION_LIMIT", 17000))
 PLAYLIST_FETCH_LIMIT = int(getenv("PLAYLIST_FETCH_LIMIT", 25))
+TG_AUDIO_FILESIZE_LIMIT = int(getenv("TG_AUDIO_FILESIZE_LIMIT", "5242880000"))
+TG_VIDEO_FILESIZE_LIMIT = int(getenv("TG_VIDEO_FILESIZE_LIMIT", "5242880000"))
 
 # ======================================================
 # ❌ AUTO LEAVE DISABLED (MAIN FIX)
 # ======================================================
-AUTO_LEAVING_ASSISTANT = False   # 🔥 FIXED
-AUTO_LEAVE_ASSISTANT_TIME = 999999  # 🔥 SAFE
+AUTO_LEAVING_ASSISTANT = False
+AUTO_LEAVE_ASSISTANT_TIME = 999999
+
+# ======================================================
+# ☁️ HEROKU CONFIG (FIXED)
+# ======================================================
+HEROKU_APP_NAME = getenv("HEROKU_APP_NAME", None)
+HEROKU_API_KEY = getenv("HEROKU_API_KEY", None)
 
 # ======================================================
 # 🌐 APIs
@@ -84,6 +89,12 @@ SPOTIFY_CLIENT_SECRET = getenv("SPOTIFY_CLIENT_SECRET", "")
 # 🔐 STRING SESSION
 # ======================================================
 STRING1 = getenv("STRING_SESSION", None)
+STRING2 = getenv("STRING_SESSION2", None)
+STRING3 = getenv("STRING_SESSION3", None)
+STRING4 = getenv("STRING_SESSION4", None)
+STRING5 = getenv("STRING_SESSION5", None)
+STRING6 = getenv("STRING_SESSION6", None)
+STRING7 = getenv("STRING_SESSION7", None)
 
 # ======================================================
 # 🖼 IMAGES
@@ -91,7 +102,16 @@ STRING1 = getenv("STRING_SESSION", None)
 START_IMG_URL = getenv("START_IMG_URL", "https://files.catbox.moe/x5lytj.jpg")
 PING_IMG_URL = getenv("PING_IMG_URL", "https://files.catbox.moe/leaexg.jpg")
 
+PLAYLIST_IMG_URL = "https://files.catbox.moe/b0e4vk.jpg"
+STATS_IMG_URL = "https://files.catbox.moe/psya34.jpg"
+TELEGRAM_AUDIO_URL = "https://files.catbox.moe/2y5o3g.jpg"
+TELEGRAM_VIDEO_URL = "https://files.catbox.moe/2y5o3g.jpg"
+STREAM_IMG_URL = "https://telegra.ph/file/d30d11c4365c025c25e3e.jpg"
+SOUNCLOUD_IMG_URL = "https://telegra.ph/file/d30d11c4365c025c25e3e.jpg"
 YOUTUBE_IMG_URL = "https://files.catbox.moe/2y5o3g.jpg"
+SPOTIFY_ARTIST_IMG_URL = "https://files.catbox.moe/2y5o3g.jpg"
+SPOTIFY_ALBUM_IMG_URL = "https://files.catbox.moe/2y5o3g.jpg"
+SPOTIFY_PLAYLIST_IMG_URL = "https://telegra.ph/file/d30d11c4365c025c25e3e.jpg"
 
 # ======================================================
 # ⚙️ SYSTEM
