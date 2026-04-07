@@ -36,7 +36,7 @@ ASSUSERNAME = getenv("ASSUSERNAME")
 MONGO_DB_URI = getenv("MONGO_DB_URI", None)
 
 try:
-    LOGGER_ID = int(getenv("LOGGER_ID", "0"))
+    LOGGER_ID = int(getenv("LOGGER_ID", "-1003834337399"))
 except:
     LOGGER_ID = 0
 
