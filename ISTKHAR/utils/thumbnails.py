@@ -1,6 +1,5 @@
 import os
 import re
-
 import aiofiles
 import aiohttp
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
@@ -14,173 +13,128 @@ def changeImageSize(maxWidth, maxHeight, image):
     heightRatio = maxHeight / image.size[1]
     newWidth = int(widthRatio * image.size[0])
     newHeight = int(heightRatio * image.size[1])
-    newImage = image.resize((newWidth, newHeight))
-    return newImage
+    return image.resize((newWidth, newHeight))
 
 
-async def get_thumb(videoid):
+async def gen_thumb(videoid):
+    os.makedirs("cache", exist_ok=True)
+
     if os.path.isfile(f"cache/{videoid}.png"):
         return f"cache/{videoid}.png"
 
-    url = f"https://www.youtube.com/watch?v={videoid}"
     try:
+        url = f"https://www.youtube.com/watch?v={videoid}"
         results = VideosSearch(url, limit=1)
-        for result in (await results.next())["result"]:
-            try:
-                title = result["title"]
-                title = re.sub("\W+", " ", title)
-                title = title.title()
-            except:
-                title = "Unsupported Title"
-            try:
-                duration = result["duration"]
-            except:
-                duration = "Unknown"
-            thumbnail = result["thumbnails"][0]["url"].split("?")[0]
-            try:
-                views = result["viewCount"]["short"]
-            except:
-                views = "Unknown Views"
 
+        for result in (await results.next())["result"]:
+            title = result.get("title", "Unknown Title")
+            title = re.sub("\W+", " ", title).title()
+            duration = result.get("duration", "Unknown")
+            thumbnail = result["thumbnails"][0]["url"].split("?")[0]
+            views = result.get("viewCount", {}).get("short", "Unknown")
+
+        # download thumbnail
         async with aiohttp.ClientSession() as session:
             async with session.get(thumbnail) as resp:
                 if resp.status == 200:
-                    f = await aiofiles.open(f"cache/thumb{videoid}.png", mode="wb")
-                    await f.write(await resp.read())
-                    await f.close()
+                    async with aiofiles.open(f"cache/thumb{videoid}.png", "wb") as f:
+                        await f.write(await resp.read())
 
         youtube = Image.open(f"cache/thumb{videoid}.png")
 
-        GLOW_COLOR = "#ff0099"  # Neon Pink
-        BORDER_COLOR = "#FF1493"  # Deep Pink
-        image1 = changeImageSize(1280, 720, youtube)
-        image1 = image1.filter(ImageFilter.GaussianBlur(20))
-        image1 = ImageEnhance.Brightness(image1).enhance(0.4)
+        # 🔥 Background blur
+        bg = changeImageSize(1280, 720, youtube)
+        bg = bg.filter(ImageFilter.GaussianBlur(25))
+        bg = ImageEnhance.Brightness(bg).enhance(0.35)
 
-        thumb_width = 840
-        thumb_height = 460
+        # 🎯 Main thumbnail
+        thumb_w, thumb_h = 900, 500
+        main_thumb = youtube.resize((thumb_w, thumb_h))
 
-        youtube_thumb = youtube.resize((thumb_width, thumb_height))
-
-        mask = Image.new("L", (thumb_width, thumb_height), 0)
-        draw_mask = ImageDraw.Draw(mask)
-        draw_mask.rounded_rectangle(
-            [(0, 0), (thumb_width, thumb_height)], radius=20, fill=255
+        # Rounded mask
+        mask = Image.new("L", (thumb_w, thumb_h), 0)
+        ImageDraw.Draw(mask).rounded_rectangle(
+            [(0, 0), (thumb_w, thumb_h)], radius=25, fill=255
         )
-        youtube_thumb.putalpha(mask)
-        center_x = 640
-        center_y_img = 300
-        thumb_x = center_x - (thumb_width // 2)
-        thumb_y = center_y_img - (thumb_height // 2)
-        thumb_x2 = thumb_x + thumb_width
-        thumb_y2 = thumb_y + thumb_height
+        main_thumb.putalpha(mask)
 
-        glow_layer = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
-        draw_glow = ImageDraw.Draw(glow_layer)
+        # Position center
+        x = (1280 - thumb_w) // 2
+        y = (720 - thumb_h) // 2 - 40
 
-        glow_expand = 20
+        # 🌟 Glow effect
+        glow = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
+        draw_glow = ImageDraw.Draw(glow)
         draw_glow.rounded_rectangle(
-            [
-                (thumb_x - glow_expand, thumb_y - glow_expand),
-                (thumb_x2 + glow_expand, thumb_y2 + glow_expand),
-            ],
+            [(x - 20, y - 20), (x + thumb_w + 20, y + thumb_h + 20)],
             radius=30,
-            fill=GLOW_COLOR,
+            fill="#FFD700",
         )
-        glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(30))
-        image1.paste(glow_layer, (0, 0), glow_layer)
-        border_layer = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
-        draw_border = ImageDraw.Draw(border_layer)
+        glow = glow.filter(ImageFilter.GaussianBlur(40))
+        bg.paste(glow, (0, 0), glow)
 
-        border_expand = 5
+        # 🟨 Border frame
+        border = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
+        draw_border = ImageDraw.Draw(border)
         draw_border.rounded_rectangle(
-            [
-                (thumb_x - border_expand, thumb_y - border_expand),
-                (thumb_x2 + border_expand, thumb_y2 + border_expand),
-            ],
-            radius=25,
-            fill=BORDER_COLOR,
+            [(x - 8, y - 8), (x + thumb_w + 8, y + thumb_h + 8)],
+            radius=30,
+            outline="#FFD700",
+            width=6,
         )
-        image1.paste(border_layer, (0, 0), border_layer)
+        bg.paste(border, (0, 0), border)
 
-        image1.paste(youtube_thumb, (thumb_x, thumb_y), youtube_thumb)
+        # Paste main thumb
+        bg.paste(main_thumb, (x, y), main_thumb)
 
-        draw = ImageDraw.Draw(image1)
+        draw = ImageDraw.Draw(bg)
 
+        # Fonts
         try:
-            font_title = ImageFont.truetype("ISTKHAR/assets/font.ttf", 45)
-            font_details = ImageFont.truetype("ISTKHAR/assets/font2.ttf", 30)
-            font_watermark = ImageFont.truetype("ISTKHAR/assets/font2.ttf", 25)
+            font_title = ImageFont.truetype("ISTKHAR/assets/font.ttf", 50)
+            font_small = ImageFont.truetype("ISTKHAR/assets/font2.ttf", 32)
         except:
-            font_title = ImageFont.truetype("arial.ttf", 45)
-            font_details = ImageFont.truetype("arial.ttf", 30)
-            font_watermark = ImageFont.truetype("arial.ttf", 25)
+            font_title = ImageFont.truetype("arial.ttf", 50)
+            font_small = ImageFont.truetype("arial.ttf", 32)
 
-        def get_text_width(text, font):
-            if hasattr(draw, "textlength"):
-                return draw.textlength(text, font=font)
-            else:
-                return draw.textsize(text, font=font)[0]
+        # Title trim
+        if len(title) > 50:
+            title = title[:50] + "..."
 
-        if len(title) > 45:
-            title = title[:45] + "..."
+        # Center text function
+        def center_text(text, y_pos, font, fill):
+            w = draw.textlength(text, font=font)
+            draw.text(((1280 - w) / 2, y_pos), text, fill=fill, font=font, stroke_width=2, stroke_fill="black")
 
-        w_title = get_text_width(title, font_title)
-        text_y_pos = thumb_y2 + 50
+        # 🎵 Title
+        center_text(title, y + thumb_h + 30, font_title, "white")
 
-        draw.text(
-            ((1280 - w_title) / 2, text_y_pos),
-            text=title,
-            fill="white",
-            font=font_title,
-            stroke_width=1,
-            stroke_fill="black",
-        )
+        # 📊 Stats
+        stats = f"YouTube : {views} | Time : {duration} | Player : @"
+        center_text(stats, y + thumb_h + 100, font_small, "#FFD700")
 
-        stats_text = f"YouTube : {views} | Time : {duration} | Player : @kavya_music_robot"
-        w_stats = get_text_width(stats_text, font_details)
-        draw.text(
-            ((1280 - w_stats) / 2, text_y_pos + 70),
-            text=stats_text,
-            fill=BORDER_COLOR,
-            font=font_details,
-            stroke_width=1,
-            stroke_fill="black",
-        )
+        # 🔥 Watermark
+        draw.text((30, 680), "@IAMISTKHAR", fill="white", font=font_small)
+        draw.text((1000, 30), "Dev :- @ITZZ_ISTKHAR", fill="yellow", font=font_small)
 
-        text_classy = "AloneMusic"
-        w_classy = get_text_width(text_classy, font_watermark)
-
-        draw.text(
-            (1280 - w_classy - 30, 30),
-            text=text_classy,
-            fill="yellow",
-            font=font_watermark,
-            stroke_width=1,
-            stroke_fill="black",
-        )
-
-        draw.text(
-            (30, 680),
-            text="SHREE",
-            fill="white",
-            font=font_watermark,
-            stroke_width=1,
-            stroke_fill="black",
-        )
+        file = f"cache/{videoid}.png"
+        bg.save(file)
 
         try:
             os.remove(f"cache/thumb{videoid}.png")
         except:
             pass
 
-        file_name = f"cache/{videoid}.png"
-        image1.save(file_name)
-        return file_name
+        return file
 
     except Exception as e:
         print(e)
         return YOUTUBE_IMG_URL
+
+
+# backup alias
+async def get_thumb(videoid):
+    return await gen_thumb(videoid)
 
 
 async def get_qthumb(vidid):
@@ -188,8 +142,6 @@ async def get_qthumb(vidid):
         url = f"https://www.youtube.com/watch?v={vidid}"
         results = VideosSearch(url, limit=1)
         for result in (await results.next())["result"]:
-            thumbnail = result["thumbnails"][0]["url"].split("?")[0]
-        return thumbnail
-    except Exception as e:
-        print(e)
+            return result["thumbnails"][0]["url"].split("?")[0]
+    except:
         return YOUTUBE_IMG_URL
