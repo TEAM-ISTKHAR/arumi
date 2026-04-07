@@ -125,4 +125,4 @@ async def gen_thumb(videoid, user_name="Unknown"):
         stats = f"YouTube : {views} | Time : {duration} | Player : {user_name}"
         center_text(stats, y + thumb_h + 55, font_small, "#FFD700")
 
-        # 🔥 branding
+        
