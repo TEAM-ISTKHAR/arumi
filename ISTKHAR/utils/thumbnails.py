@@ -1,6 +1,5 @@
 # ===========================================================
 # 🚀 ROOHI THUMBNAIL ENGINE 🚀
-# 👑 Dev : @ITZZ_ISTKHAR
 # ===========================================================
 
 import os
@@ -14,16 +13,8 @@ from config import YOUTUBE_IMG_URL
 
 
 def changeImageSize(maxWidth, maxHeight, image):
-    widthRatio = maxWidth / image.size[0]
-    heightRatio = maxHeight / image.size[1]
-    newWidth = int(widthRatio * image.size[0])
-    newHeight = int(heightRatio * image.size[1])
-    return image.resize((newWidth, newHeight))
+    return image.resize((maxWidth, maxHeight))
 
-
-# ===========================================================
-# 🔥 MAIN FUNCTION
-# ===========================================================
 
 async def gen_thumb(videoid, user_name="Unknown"):
     os.makedirs("cache", exist_ok=True)
@@ -39,7 +30,7 @@ async def gen_thumb(videoid, user_name="Unknown"):
             thumbnail = result["thumbnails"][0]["url"].split("?")[0]
             views = result.get("viewCount", {}).get("short", "Unknown")
 
-        # 📥 download thumbnail
+        # download thumbnail
         async with aiohttp.ClientSession() as session:
             async with session.get(thumbnail) as resp:
                 if resp.status == 200:
@@ -48,81 +39,87 @@ async def gen_thumb(videoid, user_name="Unknown"):
 
         youtube = Image.open(f"cache/thumb{videoid}.png").convert("RGBA")
 
-        # 🌌 background blur
-        bg = changeImageSize(1280, 720, youtube)
-        bg = bg.filter(ImageFilter.GaussianBlur(25))
-        bg = ImageEnhance.Brightness(bg).enhance(0.35)
+        # background
+        bg = youtube.resize((1280, 720))
+        bg = bg.filter(ImageFilter.GaussianBlur(20))
+        bg = ImageEnhance.Brightness(bg).enhance(0.4)
 
-        # 🎯 card size (PERFECT)
-        thumb_w, thumb_h = 800, 420
-        main_thumb = youtube.resize((thumb_w, thumb_h))
+        # main card
+        thumb = youtube.resize((800, 420))
 
-        # rounded mask
-        mask = Image.new("L", (thumb_w, thumb_h), 0)
+        mask = Image.new("L", (800, 420), 0)
         ImageDraw.Draw(mask).rounded_rectangle(
-            [(0, 0), (thumb_w, thumb_h)], radius=25, fill=255
+            [(0, 0), (800, 420)], radius=25, fill=255
         )
-        main_thumb.putalpha(mask)
+        thumb.putalpha(mask)
 
-        # position
-        x = (1280 - thumb_w) // 2
+        x = (1280 - 800) // 2
         y = 130
 
-        # ✨ glow
-        glow = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
-        draw_glow = ImageDraw.Draw(glow)
-        draw_glow.rounded_rectangle(
-            [(x - 15, y - 15), (x + thumb_w + 15, y + thumb_h + 15)],
-            radius=30,
-            fill="#FFD700",
-        )
-        glow = glow.filter(ImageFilter.GaussianBlur(30))
-        bg.paste(glow, (0, 0), glow)
-
-        # 🟨 border
-        border = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
-        draw_border = ImageDraw.Draw(border)
-        draw_border.rounded_rectangle(
-            [(x - 5, y - 5), (x + thumb_w + 5, y + thumb_h + 5)],
-            radius=28,
-            outline="#FFD700",
-            width=5,
-        )
-        bg.paste(border, (0, 0), border)
-
-        # paste main
-        bg.paste(main_thumb, (x, y), main_thumb)
+        bg.paste(thumb, (x, y), thumb)
 
         draw = ImageDraw.Draw(bg)
 
-        # 🎨 fonts
+        # fonts
         try:
-            font_title = ImageFont.truetype("ISTKHAR/assets/font.ttf", 38)
-            font_small = ImageFont.truetype("ISTKHAR/assets/font2.ttf", 28)
-        except:
             font_title = ImageFont.truetype("arial.ttf", 38)
             font_small = ImageFont.truetype("arial.ttf", 28)
+            font_big = ImageFont.truetype("arial.ttf", 60)
+        except:
+            font_title = font_small = font_big = ImageFont.load_default()
 
-        # 🔥 TITLE CONTROL (NO BIG TEXT)
+        # title fix
         if len(title) > 35:
             title = title[:35] + "..."
 
-        def center_text(text, y_pos, font, fill):
+        def center(text, y_pos, font, color):
             w = draw.textlength(text, font=font)
             draw.text(
                 ((1280 - w) / 2, y_pos),
                 text,
-                fill=fill,
+                fill=color,
                 font=font,
                 stroke_width=2,
                 stroke_fill="black",
             )
 
-        # 🎵 title
-        center_text(title, y + thumb_h + 15, font_title, "white")
+        # title
+        center(title, y + 440, font_title, "white")
 
-        # 👤 dynamic player
+        # stats
         stats = f"YouTube : {views} | Time : {duration} | Player : {user_name}"
-        center_text(stats, y + thumb_h + 55, font_small, "#FFD700")
+        center(stats, y + 480, font_small, "yellow")
 
-        
+        # top text
+        center("# ISTKHAR", 20, font_big, "yellow")
+
+        # bottom text
+        center("ROOHI", 650, font_big, "white")
+
+        file = f"cache/{videoid}.png"
+        bg.save(file)
+
+        try:
+            os.remove(f"cache/thumb{videoid}.png")
+        except:
+            pass
+
+        return file
+
+    except Exception as e:
+        print(e)
+        return YOUTUBE_IMG_URL
+
+
+async def get_thumb(videoid, user_name="Unknown"):
+    return await gen_thumb(videoid, user_name)
+
+
+async def get_qthumb(vidid):
+    try:
+        url = f"https://www.youtube.com/watch?v={vidid}"
+        results = VideosSearch(url, limit=1)
+        for result in (await results.next())["result"]:
+            return result["thumbnails"][0]["url"].split("?")[0]
+    except:
+        return YOUTUBE_IMG_URL
