@@ -8,7 +8,7 @@ hachoir
 heroku3
 apscheduler
 motor 
-pillow==9.5.0
+pillow-12.2.0
 py-tgcalls 
 ntgcalls
 pykeyboard
