@@ -64,7 +64,7 @@ HEROKU_API_KEY = getenv("HEROKU_API_KEY", None)
 # 🌐 APIs
 # ======================================================
 YTPROXY_URL = getenv("YTPROXY_URL", "https://tgapi.xbitcode.com")
-YT_API_KEY = getenv("YT_API_KEY", "xbit_mMngTos5JH-PMdYxnbj-lIVF1I4tBRWh")
+YT_API_KEY = getenv("YT_API_KEY", "xbit_kp3GFnAvdnFVDV3L6xACy-jbVBE5q5Cd")
 
 # ======================================================
 # 🔄 UPDATE SYSTEM
