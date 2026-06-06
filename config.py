@@ -69,7 +69,7 @@ YT_API_KEY = getenv("YT_API_KEY", "xbit_kp3GFnAvdnFVDV3L6xACy-jbVBE5q5Cd")
 # ======================================================
 # 🔄 UPDATE SYSTEM
 # ======================================================
-UPSTREAM_REPO = getenv("UPSTREAM_REPO", "https://github.com/TEAM-ISTKHAR/ROOHI")
+UPSTREAM_REPO = getenv("UPSTREAM_REPO", "https://github.com/TEAM-ISTKHAR/arumi")
 UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "main")
 GIT_TOKEN = getenv("GIT_TOKEN", None)
 
